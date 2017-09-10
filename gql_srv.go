@@ -1,4 +1,4 @@
-package main
+package graphql_usr_srv
 
 import { 
 		"github.com/neelance/graphql-go"
