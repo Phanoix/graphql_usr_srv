@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	fmt.Printf("Server starting...\n")
+	fmt.Printf("Server started!\n")
 	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write(page)
 	}))
@@ -21,7 +21,6 @@ func main() {
 	http.Handle("/query", &relay.Handler{Schema: schema})
 
 	log.Fatal(http.ListenAndServe(":8000", nil))
-	fmt.Printf("Server running...\n")
 }
 
 
@@ -46,10 +45,14 @@ var Schema = `
 	# The query type, represents all of the entry points into our object graph
 	type Query {
 		user(id: ID = "1"): User
+		session(id: ID!): Session
 	}
 	# The mutation type, represents all updates we can make to our data
 	type Mutation {
+		# user registration
 		createUser(username: String!, password: String!): User
+		# user login
+		createSession(username: String!, password: String!): Session
 	}
 	# A user
 	interface User {
@@ -58,8 +61,21 @@ var Schema = `
 		# The username
 		username: String!
 	}
+	# A session
+	interface Session {
+		# The ID of the user
+		id: ID!
+		# The username
+		expires: Float!
+	}
 	# The input object sent for creating a new user
 	input UserInput {
+		# a unique username
+		username: String!
+		# user's password
+		password: String!
+	}# The input object sent for creating a new user
+	input SessionInput {
 		# a unique username
 		username: String!
 		# user's password
@@ -67,7 +83,7 @@ var Schema = `
 	}
 `
 
-
+// user
 type userInput struct {
 	Username	string
 	Password	string
@@ -79,15 +95,38 @@ type user struct {
 	Password	string
 }
 
+
+// session
+type sessionInput struct {
+	Username	string
+	Password	string
+}
+
+type session struct {
+	ID			graphql.ID
+	UserID		graphql.ID
+	Username	string
+	Expires		int
+}
+
+// test data
+// TODO: replace with an actual db connection
 var testUser = user{
 	ID:			"1",
 	Username:	"testuser",
 	Password:	"correct horse battery staple",
 }
+var testSession = session{
+	ID:			"1as6d546310asdf64@#9",
+	UserID:		"1",
+	Username:	"testuser",
+	Expires:	1506381787,
+}
 
 
 type Resolver struct{}
 
+// User resolving
 func (r *Resolver) User(args struct{ ID graphql.ID }) *userResolver {
 	return &userResolver{&testUser}
 }
@@ -99,9 +138,30 @@ type userResolver struct {
 func (r *userResolver) ID() graphql.ID {
 	return r.u.ID
 }
-
 func (r *userResolver) Username() string {
 	return r.u.Username
+}
+
+
+func (r *Resolver) Session(args struct{ ID graphql.ID }) *sessionResolver {
+	return &sessionResolver{&testSession}
+}
+
+type sessionResolver struct {
+	s *session
+}
+
+func (r *sessionResolver) ID() graphql.ID {
+	return r.s.ID
+}
+func (r *sessionResolver) UserID() graphql.ID {
+	return r.s.UserID
+}
+func (r *sessionResolver) Username() string {
+	return r.s.Username
+}
+func (r *sessionResolver) Expires() float64 {
+	return float64(r.s.Expires)
 }
 
 
@@ -121,6 +181,19 @@ func (r *Resolver) CreateUser(args *struct {
 		Password:	Password,
 	}
 	return &userResolver{&createdUser}
+}
+
+func (r *Resolver) CreateSession(args *struct {
+	Username string
+	Password  string
+}) *sessionResolver{
+	var createdSession = session{
+		ID:			"2962345654sdfg#@!6",
+		UserID:		"2",
+		Username:	args.Username,
+		Expires:	1606381737,
+	}
+	return &sessionResolver{&createdSession}
 }
 
 

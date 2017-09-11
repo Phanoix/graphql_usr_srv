@@ -25,12 +25,26 @@ query{
   }
 }
 
-
+## query test session
+query{
+  session(id: "1as6d546310asdf64@#9"){
+    id
+    expires
+  }
+}
 
 ## create user (doesn't actually create anything persistent)
 mutation{
   createUser(username: "123", password: "123"){
     id
     username
+  }
+}
+
+## login, get session
+mutation{
+  createSession(username: "test", password: "password"){
+    id
+    expires
   }
 }
