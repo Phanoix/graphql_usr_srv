@@ -10,4 +10,5 @@ RUN cd /src && go build -o usr_srv
 FROM alpine
 WORKDIR /app
 COPY --from=build-env /src/usr_srv /app/
+EXPOSE 8000
 ENTRYPOINT  ./usr_srv
