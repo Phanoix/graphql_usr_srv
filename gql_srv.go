@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-//	"log"
+	"log"
 	"net/http"
 	"encoding/base64"
 
@@ -14,8 +14,13 @@ import (
 
 func main() {
 	fmt.Printf("Server starting...\n")
-	http.HandleFunc("/", handler)
-	http.ListenAndServe(":8000", nil)
+	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write(page)
+	}))
+
+	http.Handle("/query", &relay.Handler{Schema: schema})
+
+	log.Fatal(http.ListenAndServe(":8000", nil))
 	fmt.Printf("Server running...\n")
 }
 
@@ -26,6 +31,13 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 
+var schema *graphql.Schema
+
+func init() {
+	schema = graphql.MustParseSchema(Schema, &Resolver{})
+}
+
+
 var Schema = `
 	schema {
 		query: Query
@@ -33,7 +45,7 @@ var Schema = `
 	}
 	# The query type, represents all of the entry points into our object graph
 	type Query {
-		user(id: ID!): Human
+		user(id: ID = "1"): User
 	}
 	# The mutation type, represents all updates we can make to our data
 	type Mutation {
@@ -47,7 +59,7 @@ var Schema = `
 		username: String!
 	}
 	# The input object sent for creating a new user
-	input ReviewInput {
+	input UserInput {
 		# a unique username
 		username: String!
 		# user's password
@@ -57,28 +69,26 @@ var Schema = `
 
 
 type userInput struct {
-	username	string
-	password	string
+	Username	string
+	Password	string
 }
 
 type user struct {
 	ID			graphql.ID
-	username	string
-	password	string
+	Username	string
+	Password	string
 }
 
 var testUser = user{
 	ID:			"1",
-	username:	"testuser",
-	password:	"correct horse battery staple",
+	Username:	"testuser",
+	Password:	"correct horse battery staple",
 }
 
 
 type Resolver struct{}
 
 func (r *Resolver) User(args struct{ ID graphql.ID }) *userResolver {
-
-
 	return &userResolver{&testUser}
 }
 
@@ -90,26 +100,70 @@ func (r *userResolver) ID() graphql.ID {
 	return r.u.ID
 }
 
-func (r *userResolver) username() string {
-	return r.u.username
+func (r *userResolver) Username() string {
+	return r.u.Username
 }
 
 
 func (r *Resolver) CreateUser(args *struct {
-	username string
-	password  string
+	Username string
+	Password  string
 }) *userResolver{
-	passwd, err := bcrypt.GenerateFromPassword([]byte("salt and such"+args.password), 10)
+	passwd, err := bcrypt.GenerateFromPassword([]byte("salt and such"+args.Password), 10)
 	if err != nil { 
-		fmt.Printf("user create error while generating password")
+		fmt.Printf("user create error while generating Password")
 		return nil
 	}
-	password := base64.StdEncoding.EncodeToString(passwd)
+	Password := base64.StdEncoding.EncodeToString(passwd)
 	var createdUser = user{
 		ID:			"2",
-		username:	args.username,
-		password:	password,
+		Username:	args.Username,
+		Password:	Password,
 	}
 	return &userResolver{&createdUser}
 }
 
+
+
+
+
+
+
+
+
+var page = []byte(`
+<!DOCTYPE html>
+<html>
+	<head>
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/graphiql/0.10.2/graphiql.css" />
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/fetch/1.1.0/fetch.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.5.4/react.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.5.4/react-dom.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/graphiql/0.10.2/graphiql.js"></script>
+	</head>
+	<body style="width: 100%; height: 100%; margin: 0; overflow: hidden;">
+		<div id="graphiql" style="height: 100vh;">Loading...</div>
+		<script>
+			function graphQLFetcher(graphQLParams) {
+				return fetch("/query", {
+					method: "post",
+					body: JSON.stringify(graphQLParams),
+					credentials: "include",
+				}).then(function (response) {
+					return response.text();
+				}).then(function (responseBody) {
+					try {
+						return JSON.parse(responseBody);
+					} catch (error) {
+						return responseBody;
+					}
+				});
+			}
+			ReactDOM.render(
+				React.createElement(GraphiQL, {fetcher: graphQLFetcher}),
+				document.getElementById("graphiql")
+			);
+		</script>
+	</body>
+</html>
+`)

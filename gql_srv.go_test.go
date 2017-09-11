@@ -8,11 +8,11 @@ func TestTypesAvailable(t *testing.T){
 
 	testUser := user{
 		ID:			"1",
-		username:	"testuser",
-		password:	"correct horse battery staple",
+		Username:	"testuser",
+		Password:	"correct horse battery staple",
 	}
 
-	if testUser.username != "testuser" {
+	if testUser.Username != "testuser" {
 		panic("failed user type testuser");
 	}
 }
