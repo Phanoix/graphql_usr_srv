@@ -5,7 +5,7 @@ trying out go + graphql
 * Docker image from scratch with the compiled exe
 
 
-working graphql queries:
+working graphql queries (listens on port 8000 by default):
 
 
 ## query test user
