@@ -8,6 +8,7 @@ import (
  	"fmt"
 	"encoding/base64"
 	"time"
+	"strconv"
 
 	"golang.org/x/crypto/bcrypt"
 
@@ -53,8 +54,14 @@ func getUserByID( ID string ) user {
 	return fetchedUser
 }
 
-func getSessionByID() session {
-	return testSession
+func getSessionByID( ID string ) session {
+	fetchedSession, err := fetchSession( ID )
+
+	if err != nil{
+		return testSession
+	}
+
+	return fetchedSession
 }
 
 
@@ -194,4 +201,33 @@ func fetchUserPassword( ID string ) (user, error) {
 	}
 
 	return fetchedUser, nil
+}
+
+func fetchSession( ID string ) (session, error) {
+	client := redis.NewClient(&redis.Options{
+		Addr:     "redis:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+
+	expires, err := client.Get("session:"+ID+":expires").Result()
+	if err == redis.Nil {
+		return session{}, err
+	} else if err != nil {
+		panic(err)
+	}
+	expiresInt, err := strconv.Atoi(expires)
+	if err != nil {
+		panic(err)
+	}
+
+
+	// fetch other fields as they're added the same way
+
+	fetchedSession := session{
+		ID:			ID,
+		Expires:	expiresInt,
+	}
+
+	return fetchedSession, nil
 }
