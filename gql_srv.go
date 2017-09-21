@@ -60,9 +60,11 @@ var Schema = `
 	}
 	# A session
 	interface Session {
-		# The ID of the user
+		# The ID of the session
 		id: String!
-		# The username
+		# When the session was created, in unix time
+		created: Float!
+		# When the session expires, in unix time
 		expires: Float!
 	}
 	# The input object sent for creating a new user
@@ -136,6 +138,9 @@ func (r *sessionResolver) UserID() string {
 }
 func (r *sessionResolver) Username() string {
 	return r.s.Username
+}
+func (r *sessionResolver) Created() float64 {
+	return float64(r.s.Created)
 }
 func (r *sessionResolver) Expires() float64 {
 	return float64(r.s.Expires)

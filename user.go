@@ -31,7 +31,8 @@ type session struct {
 	ID			string
 	UserID		string
 	Username	string
-	Expires		int
+	Created		int64
+	Expires		int64
 }
 
 // test data
@@ -47,6 +48,8 @@ var testSession = session{
 func getUserByID( ID string ) user {
 	fetchedUser, err := fetchUser( ID )
 
+	ID1 := base64.StdEncoding.EncodeToString( []byte(ID + time.Now().String()) )
+	testUser.ID = ID1
 	if err != nil{
 		return testUser
 	}
@@ -98,14 +101,16 @@ func login( username string, pass string ) *session {
 		return &testSession
 	}
 	// create new session
-	ID := username + time.Now().String()
+	ID := base64.StdEncoding.EncodeToString( []byte(username + time.Now().String()) )
+	created := time.Now().Unix()
 	expires := time.Now().Add(time.Hour * 24 * 30).Unix()
 
 	newSession := session{
 		ID:			ID,
 		UserID:		username,
 		Username:	username,
-		Expires:	int(expires),
+		Created:	created,
+		Expires:	expires,
 	}
 
 	return &newSession
@@ -146,6 +151,10 @@ func saveSession( newsession session ) {
 		panic(err)
 	}
 	err = client.Set("session:"+ID+":username", newsession.Username, 0).Err()
+	if err != nil {
+		panic(err)
+	}
+	err = client.Set("session:"+ID+":created", newsession.Created, 0).Err()
 	if err != nil {
 		panic(err)
 	}
@@ -221,12 +230,24 @@ func fetchSession( ID string ) (session, error) {
 		panic(err)
 	}
 
+	created, err := client.Get("session:"+ID+":created").Result()
+	if err == redis.Nil {
+		return session{}, err
+	} else if err != nil {
+		panic(err)
+	}
+	createdInt, err := strconv.Atoi(created)
+	if err != nil {
+		panic(err)
+	}
+
 
 	// fetch other fields as they're added the same way
 
 	fetchedSession := session{
 		ID:			ID,
-		Expires:	expiresInt,
+		Created:	int64(createdInt),
+		Expires:	int64(expiresInt),
 	}
 
 	return fetchedSession, nil
