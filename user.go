@@ -7,6 +7,7 @@ package main
 import (
  	"fmt"
 	"encoding/base64"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 
@@ -20,7 +21,7 @@ type user struct {
 }
 
 var testUser = user{
-	ID:			"1",
+	ID:			"default example user",
 	Username:	"testuser",
 	Password:	"correct horse battery staple",
 }
@@ -35,7 +36,7 @@ type session struct {
 // test data
 // TODO: replace with an actual db connection
 var testSession = session{
-	ID:			"1as6d546310asdf64@#9",
+	ID:			"example session - not logged in",
 	UserID:		"1",
 	Username:	"testuser",
 	Expires:	1506381787,
@@ -66,7 +67,7 @@ func addUser( username string, pass string ) *user {
 	}
 	password := base64.StdEncoding.EncodeToString(passwd)
 	var createdUser = user{
-		ID:			"2",
+		ID:			username,
 		Username:	username,
 		Password:	password,
 	}
@@ -75,7 +76,32 @@ func addUser( username string, pass string ) *user {
 }
 
 func login( username string, pass string ) *session {
-	return &testSession
+	// check for correct username + password
+	loginUser, err1 := fetchUserPassword( username )
+	if err1 != nil {
+		return &testSession
+	}
+
+	pwd, err1 := base64.StdEncoding.DecodeString( loginUser.Password )
+	if err1 != nil {
+		return &testSession
+	}
+
+	if err := bcrypt.CompareHashAndPassword(pwd, []byte("lots of salt"+pass)); err != nil {
+		return &testSession
+	}
+	// create new session
+	ID := username + time.Now().String()
+	expires := time.Now().Add(time.Hour * 24 * 30).Unix()
+
+	newSession := session{
+		ID:			ID,
+		UserID:		username,
+		Username:	username,
+		Expires:	int(expires),
+	}
+
+	return &newSession
 }
 
 
@@ -94,6 +120,29 @@ func saveUser( newuser user ) {
 		panic(err)
 	}
 	err = client.Set(ID+":password", newuser.Password, 0).Err()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func saveSession( newsession session ) {
+	client := redis.NewClient(&redis.Options{
+		Addr:     "redis:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+
+	ID := newsession.ID
+
+	err := client.Set("session:"+ID+":userid", newsession.UserID, 0).Err()
+	if err != nil {
+		panic(err)
+	}
+	err = client.Set("session:"+ID+":username", newsession.Username, 0).Err()
+	if err != nil {
+		panic(err)
+	}
+	err = client.Set("session:"+ID+":expires", newsession.Expires, 0).Err()
 	if err != nil {
 		panic(err)
 	}
@@ -118,6 +167,30 @@ func fetchUser( ID string ) (user, error) {
 	fetchedUser := user{
 		ID:			ID,
 		Username:	username,
+	}
+
+	return fetchedUser, nil
+}
+
+func fetchUserPassword( ID string ) (user, error) {
+	client := redis.NewClient(&redis.Options{
+		Addr:     "redis:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+
+	password, err := client.Get(ID+":password").Result()
+	if err == redis.Nil {
+		return user{}, err
+	} else if err != nil {
+		panic(err)
+	}
+
+	// fetch other fields as they're added the same way
+
+	fetchedUser := user{
+		ID:			ID,
+		Password:	password,
 	}
 
 	return fetchedUser, nil
