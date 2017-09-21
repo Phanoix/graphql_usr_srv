@@ -25,9 +25,31 @@ var testUser = user{
 	Password:	"correct horse battery staple",
 }
 
+type session struct {
+	ID			graphql.ID
+	UserID		graphql.ID
+	Username	string
+	Expires		int
+}
+
+// test data
+// TODO: replace with an actual db connection
+var testSession = session{
+	ID:			"1as6d546310asdf64@#9",
+	UserID:		"1",
+	Username:	"testuser",
+	Expires:	1506381787,
+}
+
+
 func getUserByID() user {
 	return testUser
 }
+
+func getSessionByID() session {
+	return testSession
+}
+
 
 func addUser( username string, pass string ) *user {
 	passwd, err := bcrypt.GenerateFromPassword([]byte("lots of salt"+pass), 10)
@@ -42,4 +64,8 @@ func addUser( username string, pass string ) *user {
 		Password:	password,
 	}
 	return &createdUser
+}
+
+func login( username string, pass string ) *session {
+	return &testSession
 }

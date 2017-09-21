@@ -80,33 +80,15 @@ var Schema = `
 	}
 `
 
-// user
+// inputs
 type userInput struct {
 	Username	string
 	Password	string
 }
 
-
-// session
 type sessionInput struct {
 	Username	string
 	Password	string
-}
-
-type session struct {
-	ID			graphql.ID
-	UserID		graphql.ID
-	Username	string
-	Expires		int
-}
-
-// test data
-// TODO: replace with an actual db connection
-var testSession = session{
-	ID:			"1as6d546310asdf64@#9",
-	UserID:		"1",
-	Username:	"testuser",
-	Expires:	1506381787,
 }
 
 
@@ -158,18 +140,11 @@ func (r *sessionResolver) Expires() float64 {
 	return float64(r.s.Expires)
 }
 
-
 func (r *Resolver) CreateSession(args *struct {
 	Username string
 	Password  string
 }) *sessionResolver{
-	var createdSession = session{
-		ID:			"2962345654sdfg#@!6",
-		UserID:		"2",
-		Username:	args.Username,
-		Expires:	1606381737,
-	}
-	return &sessionResolver{&createdSession}
+	return &sessionResolver{login( args.Username, args.Password )}
 }
 
 
