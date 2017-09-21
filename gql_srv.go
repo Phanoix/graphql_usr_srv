@@ -96,7 +96,8 @@ type Resolver struct{}
 
 // User resolving
 func (r *Resolver) User(args struct{ ID string }) *userResolver {
-	return &userResolver{&testUser}
+	usr := getUserByID(args.ID)
+	return &userResolver{&usr}
 }
 
 type userResolver struct {
