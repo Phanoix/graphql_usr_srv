@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"encoding/base64"
-
-	"golang.org/x/crypto/bcrypt"
 
 	"github.com/neelance/graphql-go"
 	"github.com/neelance/graphql-go/relay"
@@ -74,7 +71,7 @@ var Schema = `
 		username: String!
 		# user's password
 		password: String!
-	}# The input object sent for creating a new user
+	}# The input object sent for logging in a user
 	input SessionInput {
 		# a unique username
 		username: String!
@@ -85,12 +82,6 @@ var Schema = `
 
 // user
 type userInput struct {
-	Username	string
-	Password	string
-}
-
-type user struct {
-	ID			graphql.ID
 	Username	string
 	Password	string
 }
@@ -111,11 +102,6 @@ type session struct {
 
 // test data
 // TODO: replace with an actual db connection
-var testUser = user{
-	ID:			"1",
-	Username:	"testuser",
-	Password:	"correct horse battery staple",
-}
 var testSession = session{
 	ID:			"1as6d546310asdf64@#9",
 	UserID:		"1",
@@ -142,7 +128,15 @@ func (r *userResolver) Username() string {
 	return r.u.Username
 }
 
+func (r *Resolver) CreateUser(args *struct {
+	Username string
+	Password  string
+}) *userResolver{
+	return &userResolver{addUser( args.Username, args.Password )}
+}
 
+
+// Session resolving
 func (r *Resolver) Session(args struct{ ID graphql.ID }) *sessionResolver {
 	return &sessionResolver{&testSession}
 }
@@ -165,24 +159,6 @@ func (r *sessionResolver) Expires() float64 {
 }
 
 
-func (r *Resolver) CreateUser(args *struct {
-	Username string
-	Password  string
-}) *userResolver{
-	passwd, err := bcrypt.GenerateFromPassword([]byte("salt and such"+args.Password), 10)
-	if err != nil { 
-		fmt.Printf("user create error while generating Password")
-		return nil
-	}
-	Password := base64.StdEncoding.EncodeToString(passwd)
-	var createdUser = user{
-		ID:			"2",
-		Username:	args.Username,
-		Password:	Password,
-	}
-	return &userResolver{&createdUser}
-}
-
 func (r *Resolver) CreateSession(args *struct {
 	Username string
 	Password  string
@@ -195,9 +171,6 @@ func (r *Resolver) CreateSession(args *struct {
 	}
 	return &sessionResolver{&createdSession}
 }
-
-
-
 
 
 
