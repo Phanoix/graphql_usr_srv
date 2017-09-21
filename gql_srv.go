@@ -41,8 +41,8 @@ var Schema = `
 	}
 	# The query type, represents all of the entry points into our object graph
 	type Query {
-		user(id: ID = "1"): User
-		session(id: ID!): Session
+		user(id: String = "1"): User
+		session(id: String!): Session
 	}
 	# The mutation type, represents all updates we can make to our data
 	type Mutation {
@@ -54,14 +54,14 @@ var Schema = `
 	# A user
 	interface User {
 		# The ID of the user
-		id: ID!
+		id: String!
 		# The username
 		username: String!
 	}
 	# A session
 	interface Session {
 		# The ID of the user
-		id: ID!
+		id: String!
 		# The username
 		expires: Float!
 	}
@@ -95,7 +95,7 @@ type sessionInput struct {
 type Resolver struct{}
 
 // User resolving
-func (r *Resolver) User(args struct{ ID graphql.ID }) *userResolver {
+func (r *Resolver) User(args struct{ ID string }) *userResolver {
 	return &userResolver{&testUser}
 }
 
@@ -103,7 +103,7 @@ type userResolver struct {
 	u *user
 }
 
-func (r *userResolver) ID() graphql.ID {
+func (r *userResolver) ID() string {
 	return r.u.ID
 }
 func (r *userResolver) Username() string {
@@ -119,7 +119,7 @@ func (r *Resolver) CreateUser(args *struct {
 
 
 // Session resolving
-func (r *Resolver) Session(args struct{ ID graphql.ID }) *sessionResolver {
+func (r *Resolver) Session(args struct{ ID string }) *sessionResolver {
 	return &sessionResolver{&testSession}
 }
 
@@ -127,10 +127,10 @@ type sessionResolver struct {
 	s *session
 }
 
-func (r *sessionResolver) ID() graphql.ID {
+func (r *sessionResolver) ID() string {
 	return r.s.ID
 }
-func (r *sessionResolver) UserID() graphql.ID {
+func (r *sessionResolver) UserID() string {
 	return r.s.UserID
 }
 func (r *sessionResolver) Username() string {
