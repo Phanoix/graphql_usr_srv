@@ -1,8 +1,8 @@
 # graphql_usr_srv
 trying out go + graphql
 
-* At least a golang mock-like graphql server for frontend testing
-* Docker image from scratch with the compiled exe
+* At least a golang mock-like graphql server for frontend testing - done! now with a simple redis user store
+* Docker image from scratch with the compiled exe - done? not from scratch though
 
 
 working graphql queries (listens on port 8000 by default):
@@ -13,6 +13,13 @@ query{
   user(id: "1"){
     id
     username
+    email
+    registered
+    lastlogin
+    active
+    admin
+    avatarurl
+    organization
   }
 }
 
@@ -22,6 +29,13 @@ query{
   user{
     id
     username
+    email
+    registered
+    lastlogin
+    active
+    admin
+    avatarurl
+    organization
   }
 }
 
@@ -29,15 +43,23 @@ query{
 query{
   session(id: "1as6d546310asdf64@#9"){
     id
+    created
     expires
   }
 }
 
-## create user (doesn't actually create anything persistent)
+## create user
 mutation{
-  createUser(username: "123", password: "123"){
+  createUser(username: "123", password: "123", email: "a@b.c"){
     id
     username
+    email
+    registered
+    lastlogin
+    active
+    admin
+    avatarurl
+    organization
   }
 }
 
@@ -45,6 +67,7 @@ mutation{
 mutation{
   createSession(username: "test", password: "password"){
     id
+    created
     expires
   }
 }
