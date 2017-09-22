@@ -16,9 +16,16 @@ import (
 )
 
 type user struct {
-	ID			string
-	Username	string
-	Password	string
+	ID				string
+	Username		string
+	Password		string
+	Email			string
+	Registered		time.Time
+	LastLogin		time.Time
+	Active			bool
+	Admin			bool
+	AvatarURL		string
+	Organization	bool
 }
 
 var testUser = user{
@@ -48,8 +55,6 @@ var testSession = session{
 func getUserByID( ID string ) user {
 	fetchedUser, err := fetchUser( ID )
 
-	ID1 := base64.StdEncoding.EncodeToString( []byte(ID + time.Now().String()) )
-	testUser.ID = ID1
 	if err != nil{
 		return testUser
 	}
@@ -68,7 +73,7 @@ func getSessionByID( ID string ) session {
 }
 
 
-func addUser( username string, pass string ) *user {
+func addUser( username string, pass string, email *string ) *user {
 
 	passwd, err := bcrypt.GenerateFromPassword([]byte("lots of salt"+pass), 10)
 	if err != nil { 
@@ -80,6 +85,7 @@ func addUser( username string, pass string ) *user {
 		ID:			username,
 		Username:	username,
 		Password:	password,
+		Email:		*email,
 	}
 	saveUser( createdUser )
 	return &createdUser
@@ -177,12 +183,19 @@ func fetchUser( ID string ) (user, error) {
 	} else if err != nil {
 		panic(err)
 	}
+	email, err := client.Get(ID+":email").Result()
+	if err == redis.Nil {
+		return user{}, err
+	} else if err != nil {
+		panic(err)
+	}
 
 	// fetch other fields as they're added the same way
 
 	fetchedUser := user{
 		ID:			ID,
 		Username:	username,
+		Email:		email,
 	}
 
 	return fetchedUser, nil

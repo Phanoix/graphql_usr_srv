@@ -20,13 +20,6 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8000", nil))
 }
 
-
-
-func handler(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, "Hi there, %s world!", r.URL.Path[1:])
-}
-
-
 var schema *graphql.Schema
 
 func init() {
@@ -47,7 +40,7 @@ var Schema = `
 	# The mutation type, represents all updates we can make to our data
 	type Mutation {
 		# user registration
-		createUser(username: String!, password: String!): User
+		createUser(username: String!, password: String!, email: String): User
 		# user login
 		createSession(username: String!, password: String!): Session
 	}
@@ -57,6 +50,20 @@ var Schema = `
 		id: String!
 		# The username
 		username: String!
+		# User's email
+		email: String
+		# Date user was created
+		registered: String!
+		# Date and time of last login
+		lastlogin: String
+		# Is the user account active?
+		active: Boolean!
+		# Is the user an admin?
+		admin: Boolean!
+		# URL to fetch the user's avatar from
+		avatarurl: String
+		# is the user part of The Organization?!? will probably become a regular organization field at some point
+		organization: Boolean!
 	}
 	# A session
 	interface Session {
@@ -73,6 +80,8 @@ var Schema = `
 		username: String!
 		# user's password
 		password: String!
+		# user's email
+		email: String
 	}# The input object sent for logging in a user
 	input SessionInput {
 		# a unique username
@@ -86,6 +95,7 @@ var Schema = `
 type userInput struct {
 	Username	string
 	Password	string
+	Email		string
 }
 
 type sessionInput struct {
@@ -112,12 +122,44 @@ func (r *userResolver) ID() string {
 func (r *userResolver) Username() string {
 	return r.u.Username
 }
+func (r *userResolver) Email() *string {
+	if r.u.Email == "" {
+		return nil
+	}
+	return &r.u.Email
+}
+func (r *userResolver) Registered() string {
+	return r.u.Registered.String()
+}
+func (r *userResolver) Lastlogin() *string {
+	if r.u.LastLogin.String() == "" {
+		return nil
+	}
+	lLogin := r.u.LastLogin.String()
+	return &lLogin
+}
+func (r *userResolver) Active() bool {
+	return r.u.Active
+}
+func (r *userResolver) Admin() bool {
+	return r.u.Admin
+}
+func (r *userResolver) Avatarurl() *string {
+	if r.u.AvatarURL == "" {
+		return nil
+	}
+	return &r.u.AvatarURL
+}
+func (r *userResolver) Organization() bool {
+	return r.u.Organization
+}
 
 func (r *Resolver) CreateUser(args *struct {
 	Username string
-	Password  string
+	Password string
+	Email *string
 }) *userResolver{
-	return &userResolver{addUser( args.Username, args.Password )}
+	return &userResolver{addUser( args.Username, args.Password, args.Email )}
 }
 
 
