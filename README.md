@@ -9,6 +9,7 @@ working graphql queries (listens on port 8000 by default):
 
 
 ## query test user
+```graphql
 query{
   user(id: "1"){
     id
@@ -22,9 +23,11 @@ query{
     organization
   }
 }
+```
 
 or just
 
+```graphql
 query{
   user{
     id
@@ -38,8 +41,10 @@ query{
     organization
   }
 }
+```
 
 ## query test session
+```graphql
 query{
   session(id: "1as6d546310asdf64@#9"){
     id
@@ -47,8 +52,10 @@ query{
     expires
   }
 }
+```
 
 ## create user
+```graphql
 mutation{
   createUser(username: "123", password: "123", email: "a@b.c"){
     id
@@ -62,8 +69,10 @@ mutation{
     organization
   }
 }
+```
 
 ## login, get session
+```graphql
 mutation{
   createSession(username: "test", password: "password"){
     id
@@ -71,3 +80,4 @@ mutation{
     expires
   }
 }
+```
