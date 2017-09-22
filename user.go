@@ -118,7 +118,7 @@ func login( username string, pass string ) *session {
 		Created:	created,
 		Expires:	expires,
 	}
-
+	saveSession(newSession)
 	return &newSession
 }
 
@@ -138,6 +138,34 @@ func saveUser( newuser user ) {
 		panic(err)
 	}
 	err = client.Set(ID+":password", newuser.Password, 0).Err()
+	if err != nil {
+		panic(err)
+	}
+	err = client.Set(ID+":email", newuser.Email, 0).Err()
+	if err != nil {
+		panic(err)
+	}
+	err = client.Set(ID+":registered", time.Now().Unix(), 0).Err()
+	if err != nil {
+		panic(err)
+	}
+	err = client.Set(ID+":lastlogin", "", 0).Err()
+	if err != nil {
+		panic(err)
+	}
+	err = client.Set(ID+":active", false, 0).Err()
+	if err != nil {
+		panic(err)
+	}
+	err = client.Set(ID+":admin", false, 0).Err()
+	if err != nil {
+		panic(err)
+	}
+	err = client.Set(ID+":avatarurl", "", 0).Err()
+	if err != nil {
+		panic(err)
+	}
+	err = client.Set(ID+":organization", false, 0).Err()
 	if err != nil {
 		panic(err)
 	}
@@ -168,6 +196,11 @@ func saveSession( newsession session ) {
 	if err != nil {
 		panic(err)
 	}
+	// user logged in, update last login
+	err = client.Set(ID+":lastlogin", time.Now().Unix(), 0).Err()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func fetchUser( ID string ) (user, error) {
@@ -189,13 +222,62 @@ func fetchUser( ID string ) (user, error) {
 	} else if err != nil {
 		panic(err)
 	}
+	registered, err := client.Get(ID+":registered").Result()
+	if err == redis.Nil {
+		return user{}, err
+	} else if err != nil {
+		panic(err)
+	}
+	lastlogin, err := client.Get(ID+":lastlogin").Result()
+	if err == redis.Nil {
+		return user{}, err
+	} else if err != nil {
+		panic(err)
+	}
+	active, err := client.Get(ID+":active").Result()
+	if err == redis.Nil {
+		return user{}, err
+	} else if err != nil {
+		panic(err)
+	}
+	admin, err := client.Get(ID+":admin").Result()
+	if err == redis.Nil {
+		return user{}, err
+	} else if err != nil {
+		panic(err)
+	}
+	avatarurl, err := client.Get(ID+":avatarurl").Result()
+	if err == redis.Nil {
+		return user{}, err
+	} else if err != nil {
+		panic(err)
+	}
+	organization, err := client.Get(ID+":organization").Result()
+	if err == redis.Nil {
+		return user{}, err
+	} else if err != nil {
+		panic(err)
+	}
+
+
+	timeRegistered, _ := time.Parse(time.UnixDate, registered)
+	timeLastLogin, _ := time.Parse(time.UnixDate, lastlogin)
+	isActive, _ := strconv.ParseBool(active)
+	isAdmin, _ := strconv.ParseBool(admin)
+	inOrganization, _ := strconv.ParseBool(organization)
 
 	// fetch other fields as they're added the same way
 
 	fetchedUser := user{
-		ID:			ID,
-		Username:	username,
-		Email:		email,
+		ID:				ID,
+		Username:		username,
+		Email:			email,
+		Registered:		timeRegistered,
+		LastLogin:		timeLastLogin,
+		Active:			isActive,
+		Admin:			isAdmin,
+		AvatarURL:		avatarurl,
+		Organization:	inOrganization,
 	}
 
 	return fetchedUser, nil
