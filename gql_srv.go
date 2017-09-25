@@ -41,6 +41,8 @@ var Schema = `
 	type Mutation {
 		# user registration
 		createUser(username: String!, password: String!, email: String): User
+		# user update
+		updateUser(id: String!, password: String, email: String, active: Boolean, admin: Boolean, avatarurl: String, organization: Boolean): User
 		# user login
 		createSession(username: String!, password: String!): Session
 	}
@@ -89,13 +91,22 @@ var Schema = `
 		# user's password
 		password: String!
 	}
+	enum Organization{
+		THEORGANIZATION
+		ANOTHERORGANIZATION
+		MAYBE
+	}
 `
 
 // inputs
 type userInput struct {
-	Username	string
-	Password	string
-	Email		string
+	Username		string
+	Password		string
+	Email			string
+	Active			bool
+	Admin			bool
+	AvatarURL		string
+	Organization	bool
 }
 
 type sessionInput struct {
@@ -160,6 +171,18 @@ func (r *Resolver) CreateUser(args *struct {
 	Email *string
 }) *userResolver{
 	return &userResolver{addUser( args.Username, args.Password, args.Email )}
+}
+
+func (r *Resolver) UpdateUser(args *struct {
+	ID string
+	Password *string
+	Email *string
+	Active	*bool
+	Admin	*bool
+	AvatarURL *string
+	Organization *bool
+}) *userResolver{
+	return &userResolver{editUser( args.ID, args.Password, args.Email, args.Active, args.Admin, args.AvatarURL, args.Organization )}
 }
 
 

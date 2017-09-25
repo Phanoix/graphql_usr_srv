@@ -28,12 +28,6 @@ type user struct {
 	Organization	bool
 }
 
-var testUser = user{
-	ID:			"default example user",
-	Username:	"testuser",
-	Password:	"correct horse battery staple",
-}
-
 type session struct {
 	ID			string
 	UserID		string
@@ -43,7 +37,11 @@ type session struct {
 }
 
 // test data
-// TODO: replace with an actual db connection
+var testUser = user{
+	ID:			"default example user",
+	Username:	"testuser",
+	Password:	"correct horse battery staple",
+}
 var testSession = session{
 	ID:			"example session - not logged in",
 	UserID:		"1",
@@ -87,8 +85,26 @@ func addUser( username string, pass string, email *string ) *user {
 		Password:	password,
 		Email:		*email,
 	}
-	saveUser( createdUser )
+	saveNewUser( createdUser )
 	return &createdUser
+}
+
+func editUser( ID string, pass *string, email *string, active *bool, admin *bool, avatarurl *string, org *bool ) *user {
+
+	password := pass
+	if pass != nil {
+		passwd, err := bcrypt.GenerateFromPassword([]byte("lots of salt"+*pass), 10)
+		if err != nil { 
+			fmt.Printf("user create error while generating Password")
+			return nil
+		}
+		temp := base64.StdEncoding.EncodeToString(passwd)
+		password = &temp
+	}
+
+	saveUser( ID, password, email, active, admin, avatarurl, org )
+	updatedUser := getUserByID(ID)
+	return &updatedUser
 }
 
 func login( username string, pass string ) *session {
@@ -124,7 +140,7 @@ func login( username string, pass string ) *session {
 
 
 
-func saveUser( newuser user ) {
+func saveNewUser( newuser user ) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     "redis:6379",
 		Password: "", // no password set
@@ -168,6 +184,52 @@ func saveUser( newuser user ) {
 	err = client.Set(ID+":organization", false, 0).Err()
 	if err != nil {
 		panic(err)
+	}
+}
+
+func saveUser( ID string, Password	*string, Email *string,	Active *bool, Admin *bool, AvatarURL *string, Organization *bool ) {
+	client := redis.NewClient(&redis.Options{
+		Addr:     "redis:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+
+
+	if Password != nil {
+		err := client.Set(ID+":password", *Password, 0).Err()
+		if err != nil {
+			panic(err)
+		}
+	}
+	if Email != nil {
+		err := client.Set(ID+":email", *Email, 0).Err()
+		if err != nil {
+			panic(err)
+		}
+	}
+	if Active != nil {
+		err := client.Set(ID+":active", *Active, 0).Err()
+		if err != nil {
+			panic(err)
+		}
+	}
+	if Admin != nil {
+		err := client.Set(ID+":admin", *Admin, 0).Err()
+		if err != nil {
+			panic(err)
+		}
+	}
+	if AvatarURL != nil {
+		err := client.Set(ID+":avatarurl", *AvatarURL, 0).Err()
+		if err != nil {
+			panic(err)
+		}
+	}
+	if Organization != nil {
+		err := client.Set(ID+":organization", *Organization, 0).Err()
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
