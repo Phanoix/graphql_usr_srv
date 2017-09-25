@@ -79,11 +79,16 @@ func addUser( username string, pass string, email *string ) *user {
 		return nil
 	}
 	password := base64.StdEncoding.EncodeToString(passwd)
+
+	emailValue := ""
+	if email != nil {
+		emailValue = *email
+	}
 	var createdUser = user{
 		ID:			username,
 		Username:	username,
 		Password:	password,
-		Email:		*email,
+		Email:		emailValue,
 	}
 	saveNewUser( createdUser )
 	return &createdUser
